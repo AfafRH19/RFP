@@ -1,0 +1,25 @@
+.navbar {
+  display: flex;
+  align-items: center;
+  gap: 200px;
+}
+
+.nav-links li {
+  display: inline;
+}
+
+.nav-links a {
+  text-decoration: none;
+  color: #41b7d1;
+  font-size: 25px;
+}
+
+.nav-links {
+  list-style: none;
+  display: flex;
+  gap: 30px;
+}
+
+.logo img {
+  max-height: 80px;
+}

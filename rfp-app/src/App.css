@@ -1,0 +1,89 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 20px;
+  text-align: center;
+}
+
+.navbar {
+  display: flex;
+  align-items: center;
+  gap: 200px;
+}
+
+.nav-links li {
+  display: inline;
+}
+
+.nav-links a {
+  text-decoration: none;
+  color: #41b7d1;
+  font-size: 25px;
+}
+
+.nav-links {
+  list-style: none;
+  display: flex;
+  gap: 30px;
+}
+
+.logo img {
+  max-height: 80px;
+}
+
+.home_description {
+  text-align: left;
+  margin-right: 500px;
+  font-size: 25px;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.input-group input {
+  padding: 10px;
+  border: 1px solid #cccccc;
+  border-radius: 5px;
+}
+
+button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  background-color: #007bff;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+.error-message {
+  color: red;
+  font-size: 0.9em;
+  margin-top: 5px;
+  text-align: left;
+}
+
+#server-response {
+  background-color: #dde7e9;
+  width: 3000px;
+  height: 600px;
+}
+
+input[type="text"]#server-response {
+  border: 1px solid #cccccc;
+}
+
+#file-description {
+  background-color: #dde7e9;
+  margin-bottom: 10px;
+  width: 300px;
+  height: 100px;
+}
