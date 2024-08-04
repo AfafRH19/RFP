@@ -31,9 +31,11 @@ def upload_file():
         requirement_extraction(pdf_dir_path = "./SplitedDocument/", result_dir_path = "./requirementExtraction/")
         answer = process_pdfs_and_ask_questions()
 
+        message = (
+                    "Files uploaded successfully. Here are the answers to the generated questions:\n\n" + answer
+                )
          return jsonify({
-            'message': "Files uploaded successfully. Here are the answers to the generated questions:",
-            'answers': answers
+            'message': message,
         }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 400

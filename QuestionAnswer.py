@@ -124,7 +124,7 @@ llm2 = HuggingFacePipeline(pipeline=generate_Answers)
 # Directory path containing the PDFs
 
 # Load the PDF documents
-pdf_loader=DirectoryLoader('DATA/',
+pdf_loader=DirectoryLoader('uploads/',
                        glob="*.pdf",
                        loader_cls=PyPDFLoader)
 documents = pdf_loader.load()
@@ -196,6 +196,7 @@ dir_path = "/home/innov_user/ModelQT/test/ResultRequirement/"
 
 # Function to generate questions from the model and pass them to the chatbot
 def process_pdfs_and_ask_questions():
+    results = []  # Collect results in a list
   
     for file_name in os.listdir(dir_path):
         file_path = os.path.join(dir_path, file_name)
@@ -214,9 +215,9 @@ def process_pdfs_and_ask_questions():
             vectorstore = FAISS.from_documents(all_splits, embeddings)
             
             template = """[INST] <<SYS>>Your input document contains a list of requirements for a product or solution. 
-                                Your task is to rephrase each requirement as a question directed towards the provider of the product or solution. dont forget to Start every generated question with only "Question :"   and nothing else .
+                                Your task is to rephrase each requirement as a question directed towards the provider of the product or solution. don't forget to Start every generated question with only "Question :"   and nothing else .
                                 [INST] Support for HD service launch [/INST]
-                                Question : does your systeme Support for HD service launch?
+                                Question : does your system support HD service launch?
                                 [INST]  Capability to handle future service launches and closures [/INST]
                         """
             
@@ -251,6 +252,14 @@ def process_pdfs_and_ask_questions():
                 print(f"Generated Question: {question}")
                 chatbot_response = chat_bot(question)
                 print(f"Chatbot Response: {chatbot_response}")
+
+                # Append results to the list
+                results.append({
+                    "question": question,
+                    "response": chatbot_response
+                })
+    
+    return results  # Return the collected results
 
 # Process PDFs and ask questions
 process_pdfs_and_ask_questions()
