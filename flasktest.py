@@ -2,6 +2,9 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
+from QuestionAnswer import process_pdfs_and_ask_questions
+from Split import process_pdf
+from RequirementEx import requirement_extraction
 
 app = Flask(__name__)
 CORS(app)  # This will enable CORS for all routes
@@ -24,7 +27,14 @@ def upload_file():
         if file2:
             file2.save(os.path.join(UPLOAD_FOLDER, 'Product_Documentation.pdf'))
 
-        return jsonify({'message': "Files uploaded successfully Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum."}), 200
+        process_pdf( pdf_path = "./uploads/RFP_Document.pdf",output_folder="./SplitedDocument/")
+        requirement_extraction(pdf_dir_path = "./SplitedDocument/", result_dir_path = "./requirementExtraction/")
+        answer = process_pdfs_and_ask_questions()
+
+         return jsonify({
+            'message': "Files uploaded successfully. Here are the answers to the generated questions:",
+            'answers': answers
+        }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
