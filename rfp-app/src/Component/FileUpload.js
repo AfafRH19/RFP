@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
 
-const FileUpload = ({ setFile }) => {
+const FileUpload = ({ setFile, fileType }) => {
   const fileInputRef = useRef(null);
   const dropZoneRef = useRef(null);
   const [fileName, setFileName] = useState("Aucun fichier sélectionné");
@@ -52,7 +52,6 @@ const FileUpload = ({ setFile }) => {
       handleFileSelection(file);
     };
 
-
     dropZoneElement.addEventListener("dragover", handleDragOver);
     dropZoneElement.addEventListener("dragleave", handleDragLeave);
     dropZoneElement.addEventListener("drop", handleDrop);
@@ -79,7 +78,9 @@ const FileUpload = ({ setFile }) => {
         required
       />
       <div id="drop-zone1" ref={dropZoneRef} className="drop-zone">
-        Déposez votre document RFP ici
+        {fileType === "document RFP"
+          ? "Déposez votre document RFP ici"
+          : "Déposez votre documentation produit ici"}
       </div>
       <label htmlFor="file-input1" id="file-label1" className="file-label">
         {fileName}

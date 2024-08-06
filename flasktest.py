@@ -2,9 +2,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
-from QuestionAnswer import process_pdfs_and_ask_questions
-from Split import process_pdf
-from RequirementEx import requirement_extraction
 
 app = Flask(__name__)
 CORS(app)  # This will enable CORS for all routes
@@ -27,16 +24,11 @@ def upload_file():
         if file2:
             file2.save(os.path.join(UPLOAD_FOLDER, 'Product_Documentation.pdf'))
 
-        process_pdf( pdf_path = "./uploads/RFP_Document.pdf",output_folder="./SplitedDocument/")
-        requirement_extraction(pdf_dir_path = "./SplitedDocument/", result_dir_path = "./requirementExtraction/")
-        answer = process_pdfs_and_ask_questions()
+        process_pdf( pdf_path = "/home/innov_user/ModelQT/test/RFP-main2/uploads/RFP_Document.pdf",output_folder="/home/innov_user/ModelQT/test/final/SplitedDocument/")
+        requirement_extraction(pdf_dir_path = "/home/innov_user/ModelQT/test/final/SplitedDocument/", result_dir_path = "/home/innov_user/ModelQT/test/final/requirementExtraction/", custom_template=description)
+        response = process_pdfs_and_ask_questions()
 
-        message = (
-                    "Files uploaded successfully. Here are the answers to the generated questions:\n\n" + answer
-                )
-         return jsonify({
-            'message': message,
-        }), 200
+        return jsonify({'message': response}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 

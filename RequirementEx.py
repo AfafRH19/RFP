@@ -1,36 +1,21 @@
-
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
-from transformers import StoppingCriteria, StoppingCriteriaList,AutoConfig
+from transformers import StoppingCriteria, StoppingCriteriaList, AutoConfig
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.document_loaders import PyPDFLoader
-from langchain_community.document_loaders import DirectoryLoader
 from langchain_community.vectorstores import FAISS
 from langchain.llms import HuggingFacePipeline
 from langchain.prompts import PromptTemplate
 from langchain.chains import RetrievalQA
-from torch import cuda, bfloat16
+from torch import cuda
 import bitsandbytes as bnb
-from fpdf import FPDF
-import chainlit as cl
-import bitsandbytes
 import transformers
-import gradio as gr
-import asyncio
 import torch
 import os
+from fpdf import FPDF
 
-#########################################################################################################
-#HuggingFaceH4/zephyr-7b-alpha
-#meta-llama/Llama-2-13b-chat-hf
-#microsoft/Orca-2-13b
-#google/gemma-7b
-#mistralai/Mixtral-8x7B-Instruct-v0.1
-#hf_auth = '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'
-
-#device = f'cuda:{cuda.current_device()}' if cuda.is_available() else 'cpu'
-
-def requirement_extraction(pdf_dir_path, result_dir_path, model_id="meta-llama/Llama-2-13b-chat-hf", embeddings_model_name="BAAI/bge-base-en-v1.5"):
+def requirement_extraction(pdf_dir_path, result_dir_path, model_id="meta-llama/Llama-2-13b-chat-hf", 
+                           embeddings_model_name="BAAI/bge-base-en-v1.5", custom_template=None):
     # Device configuration
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
@@ -91,6 +76,30 @@ def requirement_extraction(pdf_dir_path, result_dir_path, model_id="meta-llama/L
     
     llm = HuggingFacePipeline(pipeline=generate_text)
     
+    # Define the default prompt template if no custom template is provided or if it's empty
+    if not custom_template:
+        default_template = """[INST] <<SYS>> Your task is to extract all the requirements expressed in the input document.
+        Requirements are typically indicated by keywords such as 'must,' 'shall,' 'should be,' 'can,' 'could,' 'would like,'
+        'require,' 'required', 'be capable of dealing with the following:', 'Ability to', 'expect', 'should have', 'Expected',
+            'please', 'Availability of', 'should provide', 'should indicate', 'Providing', 'to consider a', 'would like to consider 
+            the following options', and similar phrases.
+            Aim carefully to ensure that you meet all requirements of the input document. 
+            Think through this carefully and ensure to give the context for each requirement, making sure that the context accurately 
+            reflects the client's needs and expectations. 
+           
+            Please provide as many details as possible to enable accurate requirement extraction.
+        if the document is for example presentation and doesn't contain any requirements, please answer that no requirement was found and nothing else.
+        
+           <<\SYS>>[/INST]
+                    """
+        prompt_template = default_template
+    else:
+        prompt_template = custom_template
+    
+    # Add context and question to the template
+    prompt = prompt_template + "CONTEXT:\n\n{context}\n" + "Question : {question}" + "[\INST]"
+    llama_prompt = PromptTemplate(template=prompt, input_variables=["context", "question"])
+    
     # Process each PDF in the directory
     for file_name in os.listdir(pdf_dir_path):
         file_path = os.path.join(pdf_dir_path, file_name)
@@ -109,25 +118,6 @@ def requirement_extraction(pdf_dir_path, result_dir_path, model_id="meta-llama/L
             embeddings = HuggingFaceEmbeddings(model_name=embeddings_model_name, model_kwargs=model_kwargs)
             vectorstore = FAISS.from_documents(all_splits, embeddings)
             
-            # Define the prompt
-            template ="""[INST] <<SYS>> Your task is to extract all the requirements expressed in the input document.
-            Requirements are typically indicated by keywords such as 'must,' 'shall,' 'should be,' 'can,' 'could,' 'would like,'
-            'require,' 'required', 'be capable of dealing with the following:', 'Ability to', 'expect', 'should have', 'Expected',
-                'please', 'Availability of', 'should provide', 'should indicate', 'Providing', 'to consider a', 'would like to consider 
-                the following options', and similar phrases.
-                Aim carefully to ensure that you meet all requirements of the input document. 
-                Think through this carefully and ensure to give the context for each requirement, making sure that the context accurately 
-                reflects the client's needs and expectations. 
-               
-                Please provide as many details as possible to enable accurate requirement extraction.
-            if the document if for example presentation and doesen't contain any requirements, please answer that no requirement was found and nothing else.
-            
-               <<\SYS>>[/INST]
-           
-                        """ 
-            prompt = template + "CONTEXT:\n\n{context}\n" + "Question : {question}" + "[\INST]"
-            llama_prompt = PromptTemplate(template=prompt, input_variables=["context", "question"])
-            
             chain = RetrievalQA.from_chain_type(
                 llm=llm,
                 chain_type='stuff',
@@ -135,7 +125,7 @@ def requirement_extraction(pdf_dir_path, result_dir_path, model_id="meta-llama/L
                 chain_type_kwargs={"prompt":llama_prompt}
             )
             
-            question = "could you list all the Extracted requirements?"           
+            question = "Could you list all the extracted requirements?"           
             response = chain({"query": question})
             response_result = response['result']
             
@@ -150,44 +140,9 @@ def requirement_extraction(pdf_dir_path, result_dir_path, model_id="meta-llama/L
             pdf.output(output_file_path)
             print(f"Result PDF saved to {output_file_path}")
 
+# Define paths
+pdf_dir_path = "/home/innov_user/ModelQT/test/final/SplitedDocument/"
+result_dir_path = "/home/innov_user/ModelQT/test/final/requirementExtraction/"
 
-        pdf_dir_path = "/home/innov_user/ModelQT/test/final/SplitedDocument/"
-        result_dir_path = "/home/innov_user/ModelQT/test/final/requirementExtraction/"
-
-
-requirement_extraction(pdf_dir_path = "/home/innov_user/ModelQT/test/final/SplitedDocument/", result_dir_path = "/home/innov_user/ModelQT/test/final/requirementExtraction/")
-    
-    
-
-
-                             
-          
-  
-    
-        
-        
-  
-        
-        
-        
-        
-      
-      
-      
-      
-      
-
-
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-                                  
-
-
+# Call the function
+requirement_extraction(pdf_dir_path=pdf_dir_path, result_dir_path=result_dir_path)
