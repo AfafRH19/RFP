@@ -1,21 +1,68 @@
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
-from transformers import StoppingCriteria, StoppingCriteriaList, AutoConfig
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_community.document_loaders import PyPDFLoader
-from langchain_community.vectorstores import FAISS
-from langchain.llms import HuggingFacePipeline
-from langchain.prompts import PromptTemplate
-from langchain.chains import RetrievalQA
-from torch import cuda
+import bitsandbytes
+import chainlit as cl
+import gradio as gr
+import asyncio
 import bitsandbytes as bnb
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+from torch import cuda, bfloat16
 import transformers
 import torch
-import os
+from transformers import StoppingCriteria, StoppingCriteriaList,AutoConfig
+from langchain.document_loaders import PyPDFLoader, DirectoryLoader
+from langchain.llms import HuggingFacePipeline
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+
+from langchain.embeddings import HuggingFaceEmbeddings
+from langchain.vectorstores import FAISS
+from langchain.chains import RetrievalQA
+
+from langchain.prompts import PromptTemplate
+
+import pdfkit
+
+from PyPDF2 import PdfReader 
+from pdfminer.high_level import extract_text
+import io
 from fpdf import FPDF
 
-def requirement_extraction(pdf_dir_path, result_dir_path, model_id="meta-llama/Llama-2-13b-chat-hf", 
-                           embeddings_model_name="BAAI/bge-base-en-v1.5", custom_template=None):
+from unstructured.partition.pdf import partition_pdf
+from PyPDF2 import PdfFileReader
+
+from weasyprint import HTML
+
+import os
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+
+import fitz
+
+
+#########################################################################################################
+#HuggingFaceH4/zephyr-7b-alpha
+#meta-llama/Llama-2-13b-chat-hf
+#microsoft/Orca-2-13b
+#google/gemma-7b
+#mistralai/Mixtral-8x7B-Instruct-v0.1
+#hf_auth = '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'
+
+#device = f'cuda:{cuda.current_device()}' if cuda.is_available() else 'cpu'
+
+
+    
+    
+import os
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, StoppingCriteria, StoppingCriteriaList
+from langchain.document_loaders import PyPDFLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.embeddings import HuggingFaceEmbeddings
+from langchain.vectorstores import FAISS
+from langchain.chains import RetrievalQA
+from langchain.prompts import PromptTemplate
+from fpdf import FPDF
+
+def requirement_extraction(pdf_dir_path, result_dir_path, model_id="meta-llama/Llama-2-7b-chat-hf", embeddings_model_name="BAAI/bge-base-en-v1.5"):
     # Device configuration
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
@@ -70,17 +117,54 @@ def requirement_extraction(pdf_dir_path, result_dir_path, model_id="meta-llama/L
         task='text-generation',
         stopping_criteria=stopping_criteria,
         temperature=0.1,
-        max_new_tokens=1000,
+        max_new_tokens=512,
         repetition_penalty=1.1
     )
     
     llm = HuggingFacePipeline(pipeline=generate_text)
-    
-    # Define the default prompt template if no custom template is provided or if it's empty
-    if not custom_template:
-        default_template = """[INST] <<SYS>> Your task is to extract all the requirements expressed in the input document.
-        Requirements are typically indicated by keywords such as 'must,' 'shall,' 'should be,' 'can,' 'could,' 'would like,'
-        'require,' 'required', 'be capable of dealing with the following:', 'Ability to', 'expect', 'should have', 'Expected',
+
+    for file_name in os.listdir(pdf_dir_path):
+        file_path = os.path.join(pdf_dir_path, file_name)
+        if file_path.lower().endswith('.pdf') and os.path.isfile(file_path):
+            print(f"Processing PDF: {file_path}")
+            
+            # Load and split the document
+            pdf_loader = PyPDFLoader(file_path)
+            document = pdf_loader.load()
+            
+            # Split the document into chunks
+            text_splitter = RecursiveCharacterTextSplitter(chunk_size=200, chunk_overlap=10)
+            all_splits = text_splitter.split_documents(document)
+            
+            # Check if any text was extracted
+            if not all_splits:
+                print(f"Aucun texte extrait du fichier {file_name}. Passage au fichier suivant.")
+                continue
+            
+            # Initialize embeddings and vector store
+            model_kwargs = {"device": "cuda" if torch.cuda.is_available() else "cpu"}
+            embeddings = HuggingFaceEmbeddings(model_name=embeddings_model_name, model_kwargs=model_kwargs)
+            
+            # Generate embeddings
+            try:
+                embeddings_list = embeddings.embed_documents([getattr(split, 'text', None) or getattr(split, 'page_content', None) for split in all_splits])
+                if not embeddings_list or len(embeddings_list[0]) == 0:
+                    raise ValueError("Les embeddings gs ne sont pas correctement forms.")
+            except Exception as e:
+                print(f"Erreur lors de la gration des embeddings : {e}")
+                continue
+            
+            # Initialize FAISS vector store
+            try:
+                vectorstore = FAISS.from_documents(all_splits, embeddings)
+            except Exception as e:
+                print(f"Erreur lors de la cration du vecteur FAISS : {e}")
+                continue
+            
+            # Define the prompt
+            template = """[INST] <<SYS>> Your task is to extract all the requirements expressed in the input document.
+            Requirements are typically indicated by keywords such as 'must,' 'shall,' 'should be,' 'can,' 'could,' 'would like,'
+            'require,' 'required', 'be capable of dealing with the following:', 'Ability to', 'expect', 'should have', 'Expected',
             'please', 'Availability of', 'should provide', 'should indicate', 'Providing', 'to consider a', 'would like to consider 
             the following options', and similar phrases.
             Aim carefully to ensure that you meet all requirements of the input document. 
@@ -88,35 +172,12 @@ def requirement_extraction(pdf_dir_path, result_dir_path, model_id="meta-llama/L
             reflects the client's needs and expectations. 
            
             Please provide as many details as possible to enable accurate requirement extraction.
-        if the document is for example presentation and doesn't contain any requirements, please answer that no requirement was found and nothing else.
-        
-           <<\SYS>>[/INST]
-                    """
-        prompt_template = default_template
-    else:
-        prompt_template = custom_template
-    
-    # Add context and question to the template
-    prompt = prompt_template + "CONTEXT:\n\n{context}\n" + "Question : {question}" + "[\INST]"
-    llama_prompt = PromptTemplate(template=prompt, input_variables=["context", "question"])
-    
-    # Process each PDF in the directory
-    for file_name in os.listdir(pdf_dir_path):
-        file_path = os.path.join(pdf_dir_path, file_name)
-        if file_path.lower().endswith('.pdf') and os.path.isfile(file_path):
-            print(f"Processing PDF: {file_path}")
+            if the document is for example presentation and doesn�t contain any requirements, please answer that no requirement was found and nothing else.
             
-            pdf_loader = PyPDFLoader(file_path)
-            document = pdf_loader.load()
-            
-            # Split the document into chunks
-            text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=10)
-            all_splits = text_splitter.split_documents(document)
-            
-            # Initialize embeddings and vector store
-            model_kwargs = {"device": "cuda"}
-            embeddings = HuggingFaceEmbeddings(model_name=embeddings_model_name, model_kwargs=model_kwargs)
-            vectorstore = FAISS.from_documents(all_splits, embeddings)
+            <<\SYS>>[/INST]
+            """ 
+            prompt = template + "\n\nCONTEXT:\n\n{context}\n\nQuestion: {question}[\INST]"
+            llama_prompt = PromptTemplate(template=prompt, input_variables=["context", "question"])
             
             chain = RetrievalQA.from_chain_type(
                 llm=llm,
@@ -140,9 +201,42 @@ def requirement_extraction(pdf_dir_path, result_dir_path, model_id="meta-llama/L
             pdf.output(output_file_path)
             print(f"Result PDF saved to {output_file_path}")
 
-# Define paths
-pdf_dir_path = "/home/innov_user/ModelQT/test/final/SplitedDocument/"
-result_dir_path = "/home/innov_user/ModelQT/test/final/requirementExtraction/"
 
-# Call the function
-requirement_extraction(pdf_dir_path=pdf_dir_path, result_dir_path=result_dir_path)
+
+
+requirement_extraction(pdf_dir_path ="/home/innov_user/ModelQT/test/RFP-main2/Split/", result_dir_path ="/home/innov_user/ModelQT/test/RFP-main2/Requiement/")
+    
+    
+
+
+                             
+          
+  
+    
+        
+        
+  
+        
+        
+        
+        
+      
+      
+      
+      
+      
+
+
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+                                  
+
+

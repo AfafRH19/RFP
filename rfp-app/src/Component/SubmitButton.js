@@ -1,12 +1,17 @@
-import React, { useState } from "react";
+import React from "react";
 
-const SubmitButton = ({ file1, file2, description, setResponse }) => {
-  const isValid = !!(file1 && file2);
-  console.log({ isValid });
+const SubmitButton = ({ file, docFiles, description, setResponse }) => {
+  const isValid = !!(file && docFiles && docFiles.length > 0);
+
   const fetchFiles = async () => {
     const formData = new FormData();
-    formData.append("file1", file1);
-    formData.append("file2", file2);
+    formData.append("file", file);
+
+    // Append each file in the docFiles array with the same key "docFiles"
+    docFiles.forEach((docFile) => {
+      formData.append("docFiles", docFile);
+    });
+
     formData.append("description", description);
 
     try {
@@ -14,8 +19,8 @@ const SubmitButton = ({ file1, file2, description, setResponse }) => {
         method: "POST",
         body: formData,
       });
+
       const data = await response.json();
-      console.log("Success:", data);
       setResponse(data.message);
     } catch (error) {
       console.error("Error:", error);

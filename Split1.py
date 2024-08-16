@@ -196,3 +196,6 @@ def process_pdf(pdf_path, output_folder):
     font_sizes_with_text = extract_headings_and_subheadings(pdf_path)
     headings, subheadings = classify_headings_and_subheadings(font_sizes_with_text)
     split_pdf_by_subheadings(pdf_path, subheadings, headings, output_folder)
+
+
+

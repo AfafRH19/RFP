@@ -1,3 +1,4 @@
+from langchain_community.document_loaders import PyPDFLoader
 
 from transformers import StoppingCriteria, StoppingCriteriaList,AutoConfig
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -24,7 +25,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # Model ID
 
 
-model_id = "meta-llama/Llama-2-13b-chat-hf"
+model_id = "meta-llama/Llama-2-7b-chat-hf"
 
 # Bits and bytes configuration for 4-bit quantization
 bnb_config = transformers.BitsAndBytesConfig(
@@ -124,9 +125,8 @@ llm2 = HuggingFacePipeline(pipeline=generate_Answers)
 # Directory path containing the PDFs
 
 # Load the PDF documents
-pdf_loader=DirectoryLoader('uploads/',
-                       glob="*.pdf",
-                       loader_cls=PyPDFLoader)
+pdf_loader = PyPDFLoader('uploads/Product_Documentation.pdf')
+
 documents = pdf_loader.load()
 
 
@@ -191,7 +191,7 @@ def chat_bot(Question):
     # Extract document name/source and page numbers
     
     
-dir_path = "/home/innov_user/ModelQT/test/ResultRequirement/"
+dir_path = "/home/innov_user/ModelQT/test/RFP-main2/Requiement/"
 
 
 # Function to generate questions from the model and pass them to the chatbot
