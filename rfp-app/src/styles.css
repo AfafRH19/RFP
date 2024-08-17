@@ -39,7 +39,7 @@ body {
 .form-group {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   gap: 20px;
 }
 
@@ -88,7 +88,6 @@ body {
 
 input[type="text"] {
   flex: 1;
-  padding: 10px;
   border: 1px solid #cccccc;
   border-radius: 5px;
 }
@@ -131,12 +130,13 @@ button:hover {
   flex-direction: row;
   align-items: center;
   gap: 150px;
+  justify-content: center;
 }
 
 #file-description {
   background-color: #dde7e9;
   margin-bottom: 10px;
-  width: 300px;
+  width: 100%;
   height: 100px;
 }
 
@@ -150,4 +150,14 @@ button:hover {
 .submit-button:disabled {
   background-color: #6c757d; /* Ensure background color is gray when disabled */
   cursor: not-allowed; /* Ensure cursor is not-allowed */
+}
+
+.file-uploads {
+  display: flex;
+  column-gap: 60px;
+}
+
+.buttons {
+  display: flex;
+  justify-content: space-around;
 }

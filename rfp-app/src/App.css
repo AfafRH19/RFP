@@ -45,12 +45,12 @@ body {
 }
 
 .input-group input {
-  padding: 10px;
   border: 1px solid #cccccc;
   border-radius: 5px;
 }
 
 button {
+  max-width: 200px;
   padding: 10px 20px;
   border: none;
   border-radius: 5px;
@@ -80,11 +80,3 @@ button:hover {
 input[type="text"]#server-response {
   border: 1px solid #cccccc;
 }
-
-#file-description {
-  background-color: #dde7e9;
-  margin-bottom: 10px;
-  width: 300px;
-  height: 100px;
-}
-

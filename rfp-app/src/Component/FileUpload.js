@@ -4,7 +4,7 @@ const FileUpload = ({ setFile, fileType, multiple = false }) => {
   const fileInputRef = useRef(null);
   const dropZoneRef = useRef(null);
   const [fileNames, setFileNames] = useState(
-    multiple ? [] : "Aucun fichier sélectionné"
+    multiple ? [] : "Aucun fichier sélectionné *"
   );
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -39,7 +39,7 @@ const FileUpload = ({ setFile, fileType, multiple = false }) => {
         console.log("Size:", file.size, "bytes");
       }
     } else {
-      setFileNames(multiple ? [] : "Aucun fichier sélectionné");
+      setFileNames(multiple ? [] : "Aucun fichier sélectionné *");
       console.log("No file received.");
     }
   };
@@ -109,13 +109,18 @@ const FileUpload = ({ setFile, fileType, multiple = false }) => {
       </div>
       {multiple ? (
         fileNames.length === 0 ? (
-          <label>Aucun fichier sélectionné</label>
+          <label className="file-label">Aucun fichier sélectionné *</label>
         ) : (
-          fileNames.map((fileName, index) => (
-            <label key={index} className="file-label">
-              {fileName}
-            </label>
-          ))
+          <>
+            {fileNames.slice(0, 3).map((fileName, index) => (
+              <label key={index} className="file-label">
+                {fileName}
+              </label>
+            ))}
+            {fileNames.length > 3 && (
+              <label className="file-label">+{fileNames.length - 3}</label>
+            )}
+          </>
         )
       ) : (
         <label className="file-label">{fileNames}</label>

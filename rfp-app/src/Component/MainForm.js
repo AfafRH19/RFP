@@ -7,27 +7,31 @@ import ResponseInput from "./ResponseInput";
 const MainForm = () => {
   const [file, setFile] = useState(null);
   const [docFiles, setDocFiles] = useState(null);
-  const [response, setResponse] = useState("");
+  const [response, setResponse] = useState(null);
   const [description, setDescription] = useState("");
 
   return (
     <div className="container">
       <div className="form-group">
-        <FileUpload setFile={setFile} fileType="document RFP" />
-        <FileUpload
-          setFile={setDocFiles}
-          fileType="product documentation"
-          multiple={true}
-        />
+        <div className="file-uploads">
+          <FileUpload setFile={setFile} fileType="document RFP" />
+          <FileUpload
+            setFile={setDocFiles}
+            fileType="product documentation"
+            multiple={true}
+          />
+        </div>
         <Prompt setDescription={setDescription} />
-        <SubmitButton
-          file={file}
-          docFiles={docFiles}
-          description={description}
-          setResponse={setResponse}
-        />
+        <div className="buttons">
+          <SubmitButton
+            file={file}
+            docFiles={docFiles}
+            description={description}
+            setResponse={setResponse}
+          />
+          <ResponseInput response={response} />
+        </div>
       </div>
-      <ResponseInput response={response} />
     </div>
   );
 };

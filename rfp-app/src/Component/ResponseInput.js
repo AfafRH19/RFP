@@ -58,7 +58,15 @@ const ResponseInput = ({ response }) => {
     doc.save("response.pdf");
   };
 
-  return <button onClick={handleClick}>Generate PDF"</button>;
+  return (
+    <button
+      className={`submit-button ${!response ? "disabled" : ""}`}
+      onClick={handleClick}
+      disabled={!response}
+    >
+      Generate PDF
+    </button>
+  );
 };
 
 export default ResponseInput;
